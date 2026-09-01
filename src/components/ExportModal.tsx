@@ -26,8 +26,8 @@ export function ExportModal({ token }: ExportModalProps) {
     <section className="export-panel" id="export" aria-labelledby="export-title">
       <div>
         <p className="section-kicker">Backup</p>
-        <h2 id="export-title">导出备份</h2>
-        <p>CSV 给表格软件，JSON 给后续迁移和恢复。</p>
+        <h2 id="export-title">导入 / 导出</h2>
+        <p>当前可导出 CSV 和 JSON；导入功能沿用同一账本入口规划。</p>
       </div>
       <div className="action-row">
         <button className="tool-button" type="button" onClick={() => void handleExport('csv')}>

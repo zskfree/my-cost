@@ -9,10 +9,12 @@ import { startAudioRecording, type AudioRecordingSession } from './services/audi
 import type { EntryResponse, Transaction, TransactionsResponse } from './types';
 
 const TOKEN_STORAGE_KEY = 'mycost.appPasskey';
+type ViewKey = 'analysis' | 'input' | 'transactions' | 'export';
 
 export function App() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY) ?? '');
   const [month, setMonth] = useState(() => currentMonth());
+  const [view, setView] = useState<ViewKey>(() => viewFromHash());
   const [text, setText] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -39,6 +41,14 @@ export function App() {
     },
     [month, token],
   );
+
+  useEffect(() => {
+    function syncView() {
+      setView(viewFromHash());
+    }
+    window.addEventListener('hashchange', syncView);
+    return () => window.removeEventListener('hashchange', syncView);
+  }, []);
 
   useEffect(() => {
     if (token.trim()) {
@@ -118,6 +128,7 @@ export function App() {
       setMonth(targetMonth);
     }
     await refresh(targetMonth);
+    window.location.hash = 'transactions';
   }
 
   async function handleDelete(transaction: Transaction) {
@@ -134,6 +145,8 @@ export function App() {
     }
   }
 
+  const page = pageMeta(view);
+
   return (
     <div className="app-workbench">
       <aside className="side-rail" aria-label="MyCost 导航">
@@ -141,11 +154,11 @@ export function App() {
           <p className="eyebrow">MyCost</p>
           <h1>账本工作台</h1>
         </div>
-        <nav className="rail-nav">
-          <a href="#input">录入</a>
-          <a href="#analysis">复盘</a>
-          <a href="#transactions">账单</a>
-          <a href="#export">导出</a>
+        <nav className="rail-nav" aria-label="主导航">
+          <NavItem view="analysis" activeView={view} label="复盘" />
+          <NavItem view="input" activeView={view} label="记账" />
+          <NavItem view="transactions" activeView={view} label="账单" />
+          <NavItem view="export" activeView={view} label="导入 / 导出" />
         </nav>
         <div className="rail-footnote">
           <span>{token ? 'Token 已设置' : '待设置 Token'}</span>
@@ -156,36 +169,97 @@ export function App() {
       <main className="workbench-main">
         <header className="workbench-header">
           <div>
-            <p className="eyebrow">Shortcuts · PWA · D1</p>
-            <h2>把流水录进去，把异常找出来。</h2>
+            <p className="eyebrow">{page.kicker}</p>
+            <h2>{page.title}</h2>
+            <p className="header-description">{page.description}</p>
           </div>
           <div className={recording ? 'status-pill live' : 'status-pill'}>{recording ? '录音中' : loading ? '处理中' : '就绪'}</div>
         </header>
 
-        <div className="input-layout" id="input">
-          <QuickInputBar
-            token={token}
-            text={text}
-            loading={loading}
-            notice={notice}
-            error={error}
-            onTokenChange={setToken}
-            onTextChange={setText}
-            recording={recording}
-            onSubmit={handleSubmit}
-            onRefresh={() => void refresh(month)}
-            onStartRecording={handleStartRecording}
-            onStopRecording={handleStopRecording}
-          />
-          <DashboardStats response={data} month={month} onMonthChange={setMonth} />
-        </div>
+        {view === 'analysis' ? (
+          <>
+            <div className="view-content analysis-view">
+              <DashboardStats response={data} month={month} onMonthChange={setMonth} />
+            </div>
+            <SpendingAnalysis response={data} month={month} />
+          </>
+        ) : null}
 
-        <SpendingAnalysis response={data} month={month} />
-        <TransactionList transactions={data.transactions} loading={loading} onDelete={handleDelete} />
-        <ExportModal token={token.trim()} />
+        {view === 'input' ? (
+          <div className="view-content input-view">
+            <QuickInputBar
+              token={token}
+              text={text}
+              loading={loading}
+              notice={notice}
+              error={error}
+              onTokenChange={setToken}
+              onTextChange={setText}
+              recording={recording}
+              onSubmit={handleSubmit}
+              onRefresh={() => void refresh(month)}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
+            />
+          </div>
+        ) : null}
+
+        {view === 'transactions' ? (
+          <>
+            <div className="view-content transactions-view">
+              <DashboardStats response={data} month={month} onMonthChange={setMonth} />
+            </div>
+            <TransactionList transactions={data.transactions} loading={loading} onDelete={handleDelete} />
+          </>
+        ) : null}
+
+        {view === 'export' ? (
+          <div className="view-content export-view">
+            <ExportModal token={token.trim()} />
+          </div>
+        ) : null}
       </main>
     </div>
   );
+}
+
+function NavItem({ view, activeView, label }: { view: ViewKey; activeView: ViewKey; label: string }) {
+  return (
+    <a className={view === activeView ? 'nav-link active' : 'nav-link'} href={`#${view}`} aria-current={view === activeView ? 'page' : undefined}>
+      {label}
+    </a>
+  );
+}
+
+function pageMeta(view: ViewKey): { kicker: string; title: string; description: string } {
+  const pages: Record<ViewKey, { kicker: string; title: string; description: string }> = {
+    analysis: {
+      kicker: 'Monthly review',
+      title: '先看钱花在哪里。',
+      description: '按月份拆解支出结构、日分布和需要复核的 AI 记录。',
+    },
+    input: {
+      kicker: 'Entry',
+      title: '记账只做一件事：把流水交给 AI。',
+      description: '网页端低频使用入口；快捷指令和录音同样写入这本账。',
+    },
+    transactions: {
+      kicker: 'Ledger',
+      title: '每一笔，都能回到原始输入。',
+      description: '查看当前月份明细，核对分类、支付方式、来源和置信度。',
+    },
+    export: {
+      kicker: 'Backup',
+      title: '把账本带走。',
+      description: '导出 CSV 或 JSON，用于备份、检查和后续迁移。',
+    },
+  };
+  return pages[view];
+}
+
+function viewFromHash(): ViewKey {
+  const value = window.location.hash.replace('#', '');
+  return value === 'input' || value === 'transactions' || value === 'export' ? value : 'analysis';
 }
 
 function currentMonth(): string {

@@ -24,7 +24,7 @@ export async function apiFetch<T>(path: string, token: string, init: RequestInit
 }
 
 export function listTransactions(token: string, month: string): Promise<TransactionsResponse> {
-  return apiFetch<TransactionsResponse>(`/transactions?month=${encodeURIComponent(month)}&limit=100`, token);
+  return apiFetch<TransactionsResponse>(`/transactions?month=${encodeURIComponent(month)}&limit=500`, token);
 }
 
 export function createEntry(token: string, text: string): Promise<EntryResponse> {
