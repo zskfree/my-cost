@@ -1,4 +1,4 @@
-import type { EntryResponse, TransactionsResponse } from '../types';
+import type { EntryResponse, ImportResponse, TransactionsResponse } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
@@ -61,6 +61,15 @@ export function createAudioEntry(token: string, audio: File, text = ''): Promise
 
 export function deleteTransaction(token: string, id: string): Promise<{ status: string }> {
   return apiFetch<{ status: string }>(`/transactions/${id}`, token, { method: 'DELETE' });
+}
+
+export function importCsv(token: string, file: File): Promise<ImportResponse> {
+  const body = new FormData();
+  body.set('file', file);
+  return apiFetch<ImportResponse>('/import', token, {
+    method: 'POST',
+    body,
+  });
 }
 
 export async function downloadExport(token: string, format: 'csv' | 'json'): Promise<void> {

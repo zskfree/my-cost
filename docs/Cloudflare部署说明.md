@@ -217,6 +217,16 @@ curl "https://<your-worker-domain>/api/v1/transactions?month=2026-09" \
   -H "Authorization: Bearer <APP_PASSKEY>"
 ```
 
+导入 CSV：
+
+```bash
+curl -X POST https://<your-worker-domain>/api/v1/import \
+  -H "Authorization: Bearer <APP_PASSKEY>" \
+  -F "file=@docs/模拟账单.csv;type=text/csv"
+```
+
+CSV 必须包含 `日期`、`类型`、`金额`、`一级分类` 列；可选列为 `币种`、`二级分类`、`商户`、`支付方式`、`备注`、`原始识别文本`。单次最多导入 500 行。重复导入相同 CSV 行会自动跳过。
+
 导出：
 
 ```bash
@@ -237,6 +247,6 @@ curl -L "https://<your-worker-domain>/api/v1/export?format=json" \
 - [ ] schema 已执行。
 - [ ] `APP_PASSKEY` 和 `ONE_API_KEY` 已设置为 Secret。
 - [ ] One API 文本解析成功。
-- [ ] PWA 新增、查询、删除、导出成功。
+- [ ] PWA 新增、查询、删除、CSV 导入、导出成功。
 - [ ] 苹果文本快捷指令成功。
 - [ ] 音频模型能力已验证。

@@ -28,6 +28,7 @@
 - One API 文本/音频解析和模型降级
 - D1 交易新增、查询、汇总、更新、软删除
 - `request_id` 幂等去重
+- CSV 导入（服务端校验、重复行跳过）
 - CSV / JSON 导出
 - Worker Bearer Token 鉴权
 - Worker 静态资产托管
@@ -108,6 +109,16 @@ curl -X POST https://<your-worker-domain>/api/v1/entry \
 - 健康检查返回 HTTP `200` 和 `status: "ok"`。
 - 记账接口返回 HTTP `200` 和 `status: "SUCCESS"`。
 - 重复 `request_id` 不会新增第二笔。
+
+CSV 导入：
+
+```bash
+curl -X POST https://<your-worker-domain>/api/v1/import \
+  -H "Authorization: Bearer <APP_PASSKEY>" \
+  -F "file=@docs/模拟账单.csv;type=text/csv"
+```
+
+CSV 必须包含 `日期`、`类型`、`金额`、`一级分类` 列；可选列为 `币种`、`二级分类`、`商户`、`支付方式`、`备注`、`原始识别文本`。单次最多导入 500 行，重复导入同一文件会跳过已存在的行。
 
 ## 免费额度说明
 

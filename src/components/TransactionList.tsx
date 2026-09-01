@@ -11,7 +11,6 @@ export function TransactionList({ transactions, loading, onDelete }: Transaction
     <section className="ledger-panel" id="transactions" aria-labelledby="transactions-title">
       <div className="section-heading ledger-heading">
         <div>
-          <p className="section-kicker">Ledger</p>
           <h2 id="transactions-title">最近账单</h2>
         </div>
         <p>{transactions.length > 0 ? `${transactions.length} 笔记录` : '暂无账单'}</p>

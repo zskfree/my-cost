@@ -18,13 +18,14 @@ export function DashboardStats({ response, month, onMonthChange }: DashboardStat
           <h2>{month} 汇总</h2>
           <p>当前筛选月份的入库结果。</p>
         </div>
-        <input
-          className="month-field"
-          type="month"
+        <select
+          className="month-select month-picker"
           value={month}
           onChange={(event) => onMonthChange(event.target.value)}
           aria-label="选择账单月份"
-        />
+        >
+          {monthOptions(month).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
       </div>
       <div className="kpi-grid">
         <KpiItem label="支出" value={`¥${response.total_expense.toFixed(2)}`} tone="expense" />
@@ -34,6 +35,22 @@ export function DashboardStats({ response, month, onMonthChange }: DashboardStat
       </div>
     </section>
   );
+}
+
+function monthOptions(selectedMonth: string): Array<{ value: string; label: string }> {
+  const selectedYear = Number(selectedMonth.slice(0, 4));
+  const currentYear = new Date().getFullYear();
+  const firstYear = Math.min(currentYear - 5, selectedYear - 1);
+  const lastYear = Math.max(currentYear + 1, selectedYear + 1);
+  const options: Array<{ value: string; label: string }> = [];
+
+  for (let year = lastYear; year >= firstYear; year -= 1) {
+    for (let month = 12; month >= 1; month -= 1) {
+      const value = `${year}-${String(month).padStart(2, '0')}`;
+      options.push({ value, label: `${year}年${month}月` });
+    }
+  }
+  return options;
 }
 
 function KpiItem({ label, value, tone }: { label: string; value: string; tone: 'expense' | 'income' | 'quiet' }) {

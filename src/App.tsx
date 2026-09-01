@@ -158,7 +158,7 @@ export function App() {
           <NavItem view="analysis" activeView={view} label="复盘" />
           <NavItem view="input" activeView={view} label="记账" />
           <NavItem view="transactions" activeView={view} label="账单" />
-          <NavItem view="export" activeView={view} label="导入 / 导出" />
+          <NavItem view="export" activeView={view} label="导入/导出" />
         </nav>
         <div className="rail-footnote">
           <span>{token ? 'Token 已设置' : '待设置 Token'}</span>
@@ -168,11 +168,7 @@ export function App() {
 
       <main className="workbench-main">
         <header className="workbench-header">
-          <div>
-            <p className="eyebrow">{page.kicker}</p>
-            <h2>{page.title}</h2>
-            <p className="header-description">{page.description}</p>
-          </div>
+          <h2>{page.title}</h2>
           <div className={recording ? 'status-pill live' : 'status-pill'}>{recording ? '录音中' : loading ? '处理中' : '就绪'}</div>
         </header>
 
@@ -215,7 +211,13 @@ export function App() {
 
         {view === 'export' ? (
           <div className="view-content export-view">
-            <ExportModal token={token.trim()} />
+            <ExportModal
+              token={token.trim()}
+              onImportComplete={async () => {
+                await refresh(month);
+                window.location.hash = 'transactions';
+              }}
+            />
           </div>
         ) : null}
       </main>
@@ -231,28 +233,12 @@ function NavItem({ view, activeView, label }: { view: ViewKey; activeView: ViewK
   );
 }
 
-function pageMeta(view: ViewKey): { kicker: string; title: string; description: string } {
-  const pages: Record<ViewKey, { kicker: string; title: string; description: string }> = {
-    analysis: {
-      kicker: 'Monthly review',
-      title: '先看钱花在哪里。',
-      description: '按月份拆解支出结构、日分布和需要复核的 AI 记录。',
-    },
-    input: {
-      kicker: 'Entry',
-      title: '记账只做一件事：把流水交给 AI。',
-      description: '网页端低频使用入口；快捷指令和录音同样写入这本账。',
-    },
-    transactions: {
-      kicker: 'Ledger',
-      title: '每一笔，都能回到原始输入。',
-      description: '查看当前月份明细，核对分类、支付方式、来源和置信度。',
-    },
-    export: {
-      kicker: 'Backup',
-      title: '把账本带走。',
-      description: '导出 CSV 或 JSON，用于备份、检查和后续迁移。',
-    },
+function pageMeta(view: ViewKey): { title: string } {
+  const pages: Record<ViewKey, { title: string }> = {
+    analysis: { title: '月度复盘' },
+    input: { title: '记账' },
+    transactions: { title: '账单' },
+    export: { title: '导入/导出' },
   };
   return pages[view];
 }

@@ -11,6 +11,7 @@ import {
   type TransactionSource,
   type TransactionUpdate,
 } from './db';
+import { createImportRequestId, parseImportCsv, toImportTransactionInput } from './import';
 import { requireBearerToken, type AppBindings } from './middleware';
 
 const app = new Hono<AppBindings>();
@@ -92,6 +93,59 @@ app.post(`${API_PREFIX}/entry`, async (c) => {
       {
         status: 'ERROR',
         message: error instanceof Error ? error.message : 'Entry failed',
+        execution_time_ms: Date.now() - startedAt,
+      },
+      400,
+    );
+  }
+});
+
+app.post(`${API_PREFIX}/import`, async (c) => {
+  const startedAt = Date.now();
+
+  try {
+    const form = await c.req.raw.formData();
+    const file = form.get('file');
+    if (!isFileLike(file)) {
+      throw new Error('请选择 CSV 文件');
+    }
+
+    const csvText = new TextDecoder().decode(await file.arrayBuffer());
+    const rows = parseImportCsv(csvText);
+    if (rows.length > 500) {
+      throw new Error('单次最多导入 500 行 CSV 数据');
+    }
+
+    const occurrences = new Map<string, number>();
+    const inserted: TransactionRow[] = [];
+    let skipped = 0;
+    for (const row of rows) {
+      const fingerprint = JSON.stringify(row);
+      const occurrence = occurrences.get(fingerprint) ?? 0;
+      occurrences.set(fingerprint, occurrence + 1);
+      const requestId = await createImportRequestId(row, occurrence);
+      const existing = await findTransactionByRequestId(c.env.DB, requestId);
+      if (existing) {
+        skipped += 1;
+        continue;
+      }
+      inserted.push(await insertTransaction(c.env.DB, toImportTransactionInput(row, requestId)));
+    }
+
+    return c.json({
+      status: 'SUCCESS',
+      message: skipped > 0 ? `导入 ${inserted.length} 笔，跳过 ${skipped} 笔重复记录` : `导入 ${inserted.length} 笔记录`,
+      imported: inserted.length,
+      skipped,
+      total: rows.length,
+      transactions: inserted.map(toApiTransaction),
+      execution_time_ms: Date.now() - startedAt,
+    });
+  } catch (error) {
+    return c.json(
+      {
+        status: 'ERROR',
+        message: error instanceof Error ? error.message : 'Import failed',
         execution_time_ms: Date.now() - startedAt,
       },
       400,

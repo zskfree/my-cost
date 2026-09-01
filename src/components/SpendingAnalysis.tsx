@@ -36,8 +36,7 @@ export function SpendingAnalysis({ response, month }: SpendingAnalysisProps) {
     <section className="analysis-board" aria-labelledby="analysis-title">
       <div className="section-heading">
         <div>
-          <p className="section-kicker">Monthly workbench</p>
-          <h2 id="analysis-title">账单复盘</h2>
+          <h2 id="analysis-title">支出分析</h2>
         </div>
         <p>按 {month} 已加载账单即时计算，数字只来自实际入库记录。</p>
       </div>

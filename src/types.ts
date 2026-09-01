@@ -36,3 +36,13 @@ export interface EntryResponse {
   transactions?: Transaction[];
   execution_time_ms?: number;
 }
+
+export interface ImportResponse {
+  status: 'SUCCESS' | 'ERROR';
+  message: string;
+  imported?: number;
+  skipped?: number;
+  total?: number;
+  transactions?: Transaction[];
+  execution_time_ms?: number;
+}
