@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { DashboardStats } from './components/DashboardStats';
 import { ExportModal } from './components/ExportModal';
 import { QuickInputBar } from './components/QuickInputBar';
+import { SpendingAnalysis } from './components/SpendingAnalysis';
 import { TransactionList } from './components/TransactionList';
 import { createAudioEntry, createEntry, deleteTransaction, listTransactions } from './services/api';
 import { startAudioRecording, type AudioRecordingSession } from './services/audioRecorder';
@@ -134,32 +135,52 @@ export function App() {
   }
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div>
+    <div className="app-workbench">
+      <aside className="side-rail" aria-label="MyCost 导航">
+        <div className="brand-block">
           <p className="eyebrow">MyCost</p>
-          <h1>语音输入记账</h1>
-          <p className="subtle">Shortcuts · PWA · D1</p>
+          <h1>账本工作台</h1>
         </div>
-        <div className="status-pill">{token ? 'Token 已设置' : '待设置 Token'}</div>
-      </header>
+        <nav className="rail-nav">
+          <a href="#input">录入</a>
+          <a href="#analysis">复盘</a>
+          <a href="#transactions">账单</a>
+          <a href="#export">导出</a>
+        </nav>
+        <div className="rail-footnote">
+          <span>{token ? 'Token 已设置' : '待设置 Token'}</span>
+          <strong>{month}</strong>
+        </div>
+      </aside>
 
-      <main className="app-grid">
-        <QuickInputBar
-          token={token}
-          text={text}
-          loading={loading}
-          notice={notice}
-          error={error}
-          onTokenChange={setToken}
-          onTextChange={setText}
-          recording={recording}
-          onSubmit={handleSubmit}
-          onRefresh={() => void refresh(month)}
-          onStartRecording={handleStartRecording}
-          onStopRecording={handleStopRecording}
-        />
-        <DashboardStats response={data} month={month} onMonthChange={setMonth} />
+      <main className="workbench-main">
+        <header className="workbench-header">
+          <div>
+            <p className="eyebrow">Shortcuts · PWA · D1</p>
+            <h2>把流水录进去，把异常找出来。</h2>
+          </div>
+          <div className={recording ? 'status-pill live' : 'status-pill'}>{recording ? '录音中' : loading ? '处理中' : '就绪'}</div>
+        </header>
+
+        <div className="input-layout" id="input">
+          <QuickInputBar
+            token={token}
+            text={text}
+            loading={loading}
+            notice={notice}
+            error={error}
+            onTokenChange={setToken}
+            onTextChange={setText}
+            recording={recording}
+            onSubmit={handleSubmit}
+            onRefresh={() => void refresh(month)}
+            onStartRecording={handleStartRecording}
+            onStopRecording={handleStopRecording}
+          />
+          <DashboardStats response={data} month={month} onMonthChange={setMonth} />
+        </div>
+
+        <SpendingAnalysis response={data} month={month} />
         <TransactionList transactions={data.transactions} loading={loading} onDelete={handleDelete} />
         <ExportModal token={token.trim()} />
       </main>

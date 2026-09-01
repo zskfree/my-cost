@@ -23,13 +23,17 @@ export function ExportModal({ token }: ExportModalProps) {
   }
 
   return (
-    <section className="panel">
-      <h2>导出</h2>
+    <section className="export-panel" id="export" aria-labelledby="export-title">
+      <div>
+        <p className="section-kicker">Backup</p>
+        <h2 id="export-title">导出备份</h2>
+        <p>CSV 给表格软件，JSON 给后续迁移和恢复。</p>
+      </div>
       <div className="action-row">
-        <button type="button" onClick={() => void handleExport('csv')}>
+        <button className="tool-button" type="button" onClick={() => void handleExport('csv')}>
           CSV
         </button>
-        <button type="button" onClick={() => void handleExport('json')}>
+        <button className="tool-button" type="button" onClick={() => void handleExport('json')}>
           JSON
         </button>
       </div>
