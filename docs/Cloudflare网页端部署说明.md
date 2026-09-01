@@ -232,6 +232,8 @@ gemini-3.5-flash-lite,gemini-3.7-flash,gemini-3.6-flash
 
 保存变量后重新部署当前 Worker，确保新部署能读取变量。
 
+注意：`wrangler deploy` 会以仓库中的 `wrangler.toml` 作为普通变量来源。`ONE_API_BASE_URL`、`MULTIMODAL_MODELS`、`TRANSCRIBE_MODEL` 这类非密钥变量建议写入 `[vars]`，否则下次从 Git 自动部署时可能被远端配置覆盖。`APP_PASSKEY` 和 `ONE_API_KEY` 必须继续使用 Secret，不要写入 `wrangler.toml`。
+
 ## 8. 验证 One API
 
 当前 Worker 请求：
