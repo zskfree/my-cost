@@ -7,6 +7,7 @@ import {
   softDeleteTransaction,
   summarizeTransactions,
   updateTransaction,
+  bulkSoftDeleteTransactions,
   type TransactionRow,
   type TransactionSource,
   type TransactionUpdate,
@@ -28,6 +29,10 @@ interface EntryPayload {
 interface UpdatePayload extends Omit<TransactionUpdate, 'amount_cents'> {
   amount?: number;
   amount_cents?: number;
+}
+
+interface BulkDeletePayload {
+  ids?: unknown;
 }
 
 app.get(`${API_PREFIX}/health`, (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -154,8 +159,16 @@ app.post(`${API_PREFIX}/import`, async (c) => {
 });
 
 app.get(`${API_PREFIX}/transactions`, async (c) => {
+  const from = c.req.query('from');
+  const to = c.req.query('to');
+  if ((from && !to) || (!from && to) || (from && !isDateString(from)) || (to && !isDateString(to)) || (from && to && from > to)) {
+    return c.json({ status: 'ERROR', message: '日期范围无效' }, 400);
+  }
+
   const rows = await listTransactions(c.env.DB, {
     month: c.req.query('month'),
+    from,
+    to,
     category: c.req.query('category'),
     limit: parsePositiveInt(c.req.query('limit')),
   });
@@ -191,6 +204,25 @@ app.put(`${API_PREFIX}/transactions/:id`, async (c) => {
     return c.json({ status: 'SUCCESS', transaction: toApiTransaction(updated) });
   } catch (error) {
     return c.json({ status: 'ERROR', message: error instanceof Error ? error.message : 'Update failed' }, 400);
+  }
+});
+
+app.post(`${API_PREFIX}/transactions/bulk-delete`, async (c) => {
+  try {
+    const payload = (await c.req.json()) as BulkDeletePayload;
+    const ids = Array.isArray(payload.ids) ? payload.ids.filter((id): id is string => typeof id === 'string' && id.trim().length > 0) : [];
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) {
+      return c.json({ status: 'ERROR', message: '请选择要删除的账单' }, 400);
+    }
+    if (uniqueIds.length > 5000) {
+      return c.json({ status: 'ERROR', message: '单次最多删除 5000 笔账单' }, 400);
+    }
+
+    const deleted = await bulkSoftDeleteTransactions(c.env.DB, uniqueIds);
+    return c.json({ status: 'SUCCESS', deleted, message: `已删除 ${deleted} 笔账单` });
+  } catch (error) {
+    return c.json({ status: 'ERROR', message: error instanceof Error ? error.message : '批量删除失败' }, 400);
   }
 });
 
@@ -271,6 +303,10 @@ function normalizeSource(source?: TransactionSource): TransactionSource {
 function parsePositiveInt(value?: string): number | undefined {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function isDateString(value?: string): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
 }
 
 function toApiTransaction(row: TransactionRow) {

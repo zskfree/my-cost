@@ -57,6 +57,8 @@ export interface TransactionUpdate {
 
 export interface ListTransactionsParams {
   month?: string;
+  from?: string;
+  to?: string;
   category?: string;
   limit?: number;
 }
@@ -72,7 +74,10 @@ export async function listTransactions(db: D1Database, params: ListTransactionsP
   const where = ['is_deleted = 0'];
   const bindings: Array<string | number> = [];
 
-  if (params.month) {
+  if (params.from && params.to) {
+    where.push('transaction_date >= ? AND transaction_date <= ?');
+    bindings.push(params.from, params.to);
+  } else if (params.month) {
     where.push('transaction_date >= ? AND transaction_date < ?');
     bindings.push(`${params.month}-01`, nextMonth(params.month));
   }
@@ -82,7 +87,7 @@ export async function listTransactions(db: D1Database, params: ListTransactionsP
     bindings.push(params.category);
   }
 
-  const limit = Math.min(Math.max(params.limit ?? 100, 1), 500);
+  const limit = Math.min(Math.max(params.limit ?? 100, 1), 5000);
   bindings.push(limit);
 
   const query = `${LIST_SELECT} WHERE ${where.join(' AND ')} ORDER BY transaction_date DESC, created_at DESC LIMIT ?`;
@@ -210,6 +215,23 @@ export async function softDeleteTransaction(db: D1Database, id: string): Promise
     .run();
 
   return (result.meta.changes ?? 0) > 0;
+}
+
+export async function bulkSoftDeleteTransactions(db: D1Database, ids: string[]): Promise<number> {
+  let deleted = 0;
+  const now = new Date().toISOString();
+
+  for (let start = 0; start < ids.length; start += 100) {
+    const batch = ids.slice(start, start + 100);
+    const placeholders = batch.map(() => '?').join(', ');
+    const result = await db
+      .prepare(`UPDATE transactions SET is_deleted = 1, deleted_at = ?, updated_at = ? WHERE id IN (${placeholders}) AND is_deleted = 0`)
+      .bind(now, now, ...batch)
+      .run();
+    deleted += result.meta.changes ?? 0;
+  }
+
+  return deleted;
 }
 
 export function summarizeTransactions(rows: TransactionRow[]) {

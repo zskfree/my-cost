@@ -28,6 +28,15 @@ export interface TransactionsResponse {
   total_income_cents: number;
 }
 
+export type AnalysisPreset = 'day' | '7d' | '30d' | 'month' | '3m' | 'year' | '12m' | '3y' | 'custom';
+
+export interface AnalysisRange {
+  preset: AnalysisPreset;
+  from: string;
+  to: string;
+  label: string;
+}
+
 export interface EntryResponse {
   status: 'SUCCESS' | 'ERROR';
   duplicated?: boolean;

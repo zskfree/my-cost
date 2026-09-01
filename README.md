@@ -120,6 +120,21 @@ curl -X POST https://<your-worker-domain>/api/v1/import \
 
 CSV 必须包含 `日期`、`类型`、`金额`、`一级分类` 列；可选列为 `币种`、`二级分类`、`商户`、`支付方式`、`备注`、`原始识别文本`。单次最多导入 500 行，重复导入同一文件会跳过已存在的行。
 
+复盘支持日期范围查询，最多返回 5000 笔：
+
+```text
+GET /api/v1/transactions?from=2026-01-01&to=2026-12-31&limit=5000
+```
+
+批量删除使用软删除，不会立即物理清除数据：
+
+```http
+POST /api/v1/transactions/bulk-delete
+Content-Type: application/json
+
+{"ids":["transaction-id-1","transaction-id-2"]}
+```
+
 ## 免费额度说明
 
 Cloudflare Workers 有 Free plan，但不是无限资源：请求数、CPU 时间、D1 读写和存储都有各自限制。个人低频或中等频率记账通常适合先使用 Free plan，但需要在 Dashboard 的 `Billing` / `Usage` 页面观察用量。

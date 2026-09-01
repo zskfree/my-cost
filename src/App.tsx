@@ -4,9 +4,10 @@ import { ExportModal } from './components/ExportModal';
 import { QuickInputBar } from './components/QuickInputBar';
 import { SpendingAnalysis } from './components/SpendingAnalysis';
 import { TransactionList } from './components/TransactionList';
-import { createAudioEntry, createEntry, deleteTransaction, listTransactions } from './services/api';
+import { bulkDeleteTransactions, createAudioEntry, createEntry, deleteTransaction, listTransactions, listTransactionsByRange } from './services/api';
 import { startAudioRecording, type AudioRecordingSession } from './services/audioRecorder';
-import type { EntryResponse, Transaction, TransactionsResponse } from './types';
+import { makeAnalysisRange, previousAnalysisRange } from './utils/analysisRange';
+import type { AnalysisRange, EntryResponse, Transaction, TransactionsResponse } from './types';
 
 const TOKEN_STORAGE_KEY = 'mycost.appPasskey';
 type ViewKey = 'analysis' | 'input' | 'transactions' | 'export';
@@ -14,6 +15,7 @@ type ViewKey = 'analysis' | 'input' | 'transactions' | 'export';
 export function App() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY) ?? '');
   const [month, setMonth] = useState(() => currentMonth());
+  const [analysisRange, setAnalysisRange] = useState<AnalysisRange>(() => makeAnalysisRange('month'));
   const [view, setView] = useState<ViewKey>(() => viewFromHash());
   const [text, setText] = useState('');
   const [notice, setNotice] = useState('');
@@ -21,13 +23,9 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const recordingRef = useRef<AudioRecordingSession | null>(null);
-  const [data, setData] = useState<TransactionsResponse>({
-    transactions: [],
-    total_expense: 0,
-    total_income: 0,
-    total_expense_cents: 0,
-    total_income_cents: 0,
-  });
+  const [data, setData] = useState<TransactionsResponse>(emptyTransactionsResponse());
+  const [analysisData, setAnalysisData] = useState<TransactionsResponse>(emptyTransactionsResponse());
+  const [previousAnalysisData, setPreviousAnalysisData] = useState<TransactionsResponse>(emptyTransactionsResponse());
 
   const refresh = useCallback(
     async (targetMonth = month) => {
@@ -42,6 +40,25 @@ export function App() {
     [month, token],
   );
 
+  const refreshAnalysis = useCallback(
+    async (targetRange = analysisRange) => {
+      if (!token.trim()) return;
+      setError('');
+      try {
+        const previousRange = previousAnalysisRange(targetRange);
+        const [current, previous] = await Promise.all([
+          listTransactionsByRange(token.trim(), targetRange.from, targetRange.to),
+          listTransactionsByRange(token.trim(), previousRange.from, previousRange.to),
+        ]);
+        setAnalysisData(current);
+        setPreviousAnalysisData(previous);
+      } catch (refreshError) {
+        setError(refreshError instanceof Error ? refreshError.message : '读取复盘数据失败');
+      }
+    },
+    [analysisRange, token],
+  );
+
   useEffect(() => {
     function syncView() {
       setView(viewFromHash());
@@ -54,10 +71,11 @@ export function App() {
     if (token.trim()) {
       localStorage.setItem(TOKEN_STORAGE_KEY, token.trim());
       void refresh(month);
+      void refreshAnalysis(analysisRange);
     } else {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
-  }, [month, refresh, token]);
+  }, [analysisRange, month, refresh, refreshAnalysis, token]);
 
   async function handleSubmit() {
     const content = text.trim();
@@ -128,6 +146,7 @@ export function App() {
       setMonth(targetMonth);
     }
     await refresh(targetMonth);
+    await refreshAnalysis(analysisRange);
     window.location.hash = 'transactions';
   }
 
@@ -138,8 +157,28 @@ export function App() {
     try {
       await deleteTransaction(token.trim(), transaction.id);
       await refresh(month);
+      await refreshAnalysis(analysisRange);
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : '删除失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBulkDelete(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!confirm(`确定删除已选的 ${ids.length} 笔账单？删除后可通过备份恢复。`)) return;
+
+    setLoading(true);
+    setError('');
+    setNotice('');
+    try {
+      const result = await bulkDeleteTransactions(token.trim(), ids);
+      setNotice(result.message);
+      await refresh(month);
+      await refreshAnalysis(analysisRange);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '批量删除失败');
     } finally {
       setLoading(false);
     }
@@ -175,9 +214,14 @@ export function App() {
         {view === 'analysis' ? (
           <>
             <div className="view-content analysis-view">
-              <DashboardStats response={data} month={month} onMonthChange={setMonth} />
+              <DashboardStats response={analysisData} month={month} title={analysisRange.label} hideMonthPicker onMonthChange={setMonth} />
             </div>
-            <SpendingAnalysis response={data} month={month} />
+            <SpendingAnalysis
+              response={analysisData}
+              previousResponse={previousAnalysisData}
+              range={analysisRange}
+              onRangeChange={setAnalysisRange}
+            />
           </>
         ) : null}
 
@@ -205,7 +249,12 @@ export function App() {
             <div className="view-content transactions-view">
               <DashboardStats response={data} month={month} onMonthChange={setMonth} />
             </div>
-            <TransactionList transactions={data.transactions} loading={loading} onDelete={handleDelete} />
+            <TransactionList
+              transactions={data.transactions}
+              loading={loading}
+              onDelete={handleDelete}
+              onBulkDelete={handleBulkDelete}
+            />
           </>
         ) : null}
 
@@ -251,4 +300,14 @@ function viewFromHash(): ViewKey {
 function currentMonth(): string {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function emptyTransactionsResponse(): TransactionsResponse {
+  return {
+    transactions: [],
+    total_expense: 0,
+    total_income: 0,
+    total_expense_cents: 0,
+    total_income_cents: 0,
+  };
 }

@@ -4,28 +4,30 @@ interface DashboardStatsProps {
   response: TransactionsResponse;
   month: string;
   onMonthChange: (month: string) => void;
+  title?: string;
+  hideMonthPicker?: boolean;
 }
 
-export function DashboardStats({ response, month, onMonthChange }: DashboardStatsProps) {
+export function DashboardStats({ response, month, onMonthChange, title, hideMonthPicker = false }: DashboardStatsProps) {
   const balance = response.total_income - response.total_expense;
   const expenseCount = response.transactions.filter((item) => item.type === 'expense').length;
   const avgExpense = expenseCount > 0 ? response.total_expense / expenseCount : 0;
 
   return (
-    <section className="kpi-panel" aria-label="月度汇总">
+    <section className="kpi-panel" aria-label={title ? '复盘汇总' : '月度汇总'}>
       <div className="panel-heading compact-heading">
         <div>
-          <h2>{month} 汇总</h2>
-          <p>当前筛选月份的入库结果。</p>
+          <h2>{title ?? `${month} 汇总`}</h2>
+          <p>当前筛选范围的入库结果。</p>
         </div>
-        <select
+        {!hideMonthPicker ? <select
           className="month-select month-picker"
           value={month}
           onChange={(event) => onMonthChange(event.target.value)}
           aria-label="选择账单月份"
         >
           {monthOptions(month).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        </select> : null}
       </div>
       <div className="kpi-grid">
         <KpiItem label="支出" value={`¥${response.total_expense.toFixed(2)}`} tone="expense" />

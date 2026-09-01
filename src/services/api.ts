@@ -24,7 +24,19 @@ export async function apiFetch<T>(path: string, token: string, init: RequestInit
 }
 
 export function listTransactions(token: string, month: string): Promise<TransactionsResponse> {
-  return apiFetch<TransactionsResponse>(`/transactions?month=${encodeURIComponent(month)}&limit=500`, token);
+  return apiFetch<TransactionsResponse>(`/transactions?month=${encodeURIComponent(month)}&limit=5000`, token);
+}
+
+export function listTransactionsByRange(token: string, from: string, to: string): Promise<TransactionsResponse> {
+  const params = new URLSearchParams({ from, to, limit: '5000' });
+  return apiFetch<TransactionsResponse>(`/transactions?${params.toString()}`, token);
+}
+
+export function bulkDeleteTransactions(token: string, ids: string[]): Promise<{ status: string; deleted: number; message: string }> {
+  return apiFetch<{ status: string; deleted: number; message: string }>('/transactions/bulk-delete', token, {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
 }
 
 export function createEntry(token: string, text: string): Promise<EntryResponse> {
