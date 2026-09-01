@@ -1,4 +1,4 @@
-name = "my-cost"
+name = "mycost"
 main = "worker/index.ts"
 compatibility_date = "2026-09-01"
 
@@ -13,5 +13,5 @@ APP_NAME = "MyCost"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "my-cost"
-database_id = "dd9069d9-6911-4bff-a8db-fa438b393e37"
+database_name = "mycost"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"

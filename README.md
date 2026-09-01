@@ -6,7 +6,7 @@
 
 > 仓库需要是公开 GitHub 仓库。一键部署会把项目复制到你的 GitHub 账号，并在 Cloudflare 上创建 Worker。
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zskfree/mycost)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zskfree/my-cost)
 
 点击按钮后按 Cloudflare 页面提示完成：
 

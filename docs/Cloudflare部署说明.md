@@ -174,7 +174,7 @@ https://mycost.<your-workers-subdomain>.workers.dev
 README 使用：
 
 ```markdown
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zskfree/mycost)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zskfree/my-cost)
 ```
 
 要求：

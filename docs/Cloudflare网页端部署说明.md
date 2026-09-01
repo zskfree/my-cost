@@ -50,7 +50,7 @@ D1 binding: DB
 
 打开项目 README，点击：
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zskfree/mycost)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zskfree/my-cost)
 
 按钮要求源仓库是公开 GitHub 或 GitLab 仓库。流程：
 
@@ -82,7 +82,7 @@ Cloudflare 会读取 `wrangler.toml`：
 4. 点击 `Create application`。
 5. 选择 `Import a repository`、`Connect to Git` 或界面中对应的 Git 仓库导入入口。
 6. 选择 GitHub。
-7. 授权并选择 `zskfree/mycost`。
+7. 授权并选择 `zskfree/my-cost`。
 8. Worker 名称填写 `mycost`。
 9. Production branch 选择 `main`。
 
