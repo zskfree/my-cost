@@ -13,5 +13,5 @@ APP_NAME = "MyCost"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "mycost"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_name = "my-cost"
+database_id = "dd9069d9-6911-4bff-a8db-fa438b393e37"
